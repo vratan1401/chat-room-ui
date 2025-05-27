@@ -1,6 +1,4 @@
-/* src/components/ChatRoomUI.css */
-
-/* Container */
+/* container */
 .chat-room-ui {
     display: flex;
     flex-direction: column;
@@ -9,18 +7,20 @@
     color: #fff;
 }
 
-/* Header */
+/* header */
 .chat-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .chat-title {
     margin: 0;
     font-size: 1.25rem;
 }
+
 .copy-btn {
     background-color: #e50914;
     color: white;
@@ -30,12 +30,13 @@
     cursor: pointer;
     font-size: 0.9rem;
 }
+
 .copy-btn:hover {
     background-color: white;
     color: #121212;
 }
 
-/* Message list */
+/* message list */
 .chat-box {
     flex: 1;
     overflow-y: auto;
@@ -45,37 +46,43 @@
     gap: 0.75rem;
 }
 
-/* Row wrapper so avatar + bubble sit side-by-side */
+/* rows */
 .chat-row {
     display: flex;
     align-items: flex-start;
 }
+
 .chat-row.other {
     justify-content: flex-start;
 }
+
 .chat-row.own {
     justify-content: flex-end;
 }
+
 .chat-row.system-row {
     justify-content: center;
 }
 
-/* Avatar image */
+/* avatars */
 .avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
     object-fit: cover;
+    border: 2px solid #fff;
+    background-color: #2b2b2b;
 }
-/* push avatar outside the bubble */
+
 .chat-row.other .avatar {
     margin-right: 0.5rem;
 }
+
 .chat-row.own .avatar {
     margin-left: 0.5rem;
 }
 
-/* Message bubble */
+/* message bubbles */
 .chat-message {
     max-width: 60%;
     padding: 0.75rem 1rem;
@@ -84,19 +91,19 @@
     line-height: 1.4;
     word-break: break-word;
 }
-/* Others’ messages */
+
 .chat-message.left {
     background-color: #2b2b2b;
     color: #fff;
     align-self: flex-start;
 }
-/* Your messages */
+
 .chat-message.right {
     background-color: #e50914;
     color: #fff;
     align-self: flex-end;
 }
-/* System messages */
+
 .chat-message.system {
     background: transparent;
     font-style: italic;
@@ -105,13 +112,21 @@
     text-align: center;
 }
 
-/* Input area */
+/* typing indicator */
+.typing-indicator {
+    padding: 0.5rem 1rem;
+    font-style: italic;
+    color: #aaa;
+}
+
+/* input area */
 .chat-input {
     display: flex;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .chat-input input {
     flex: 1;
     padding: 0.75rem;
@@ -121,6 +136,7 @@
     color: white;
     font-size: 1rem;
 }
+
 .chat-input button {
     background-color: #e50914;
     color: white;
@@ -130,13 +146,7 @@
     font-weight: bold;
     cursor: pointer;
 }
+
 .chat-input button:hover {
     opacity: 0.9;
 }
-
-.typing-indicator {
-    padding: 0.5rem 1rem;
-    font-style: italic;
-    color: #aaa;
-}
-

@@ -8,7 +8,7 @@ import ChatRoomUI from './components/ChatRoomUI';
 function App() {
   const [nickname, setNickname] = useState('');
   const [roomIdInput, setRoomIdInput] = useState('');
-  const [userIcon, setUserIcon] = useState<string | undefined>(undefined);
+  const [userIcon, setUserIcon] = useState<string>();
 
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const isResizing = useRef(false);
@@ -28,19 +28,16 @@ function App() {
     leaveRoom,
   } = useTelepartySocket();
 
-  // Avatar picker (optional)
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!/^image\/(png|jpe?g)$/.test(file.type)) {
-      return toast.error('Please upload PNG/JPEG');
-    }
+    if (!/^image\/(png|jpe?g)$/.test(file.type))
+      return toast.error('Upload PNG/JPEG');
     const reader = new FileReader();
     reader.onload = () => setUserIcon(reader.result as string);
     reader.readAsDataURL(file);
   };
 
-  // Create room
   const handleCreate = async () => {
     if (!nickname.trim()) return toast.error('Enter a nickname');
     try {
@@ -50,7 +47,6 @@ function App() {
     }
   };
 
-  // Join room
   const handleJoin = async () => {
     if (!nickname.trim() || !roomIdInput.trim())
       return toast.error('Enter nickname & room ID');
@@ -61,51 +57,47 @@ function App() {
     }
   };
 
-  // Sidebar drag
-  const handleMouseDown = () => {
+  const startResize = () => {
     isResizing.current = true;
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', doResize);
+    document.addEventListener('mouseup', stopResize);
   };
-  const handleMouseMove = (e: MouseEvent) => {
+  const doResize = (e: MouseEvent) => {
     if (!isResizing.current) return;
-    const newW = e.clientX;
+    const w = e.clientX;
     const min = 200,
         max = window.innerWidth - 200;
-    if (newW > min && newW < max) setSidebarWidth(newW);
+    if (w > min && w < max) setSidebarWidth(w);
   };
-  const handleMouseUp = () => {
+  const stopResize = () => {
     isResizing.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener('mousemove', doResize);
+    document.removeEventListener('mouseup', stopResize);
   };
 
   return (
       <>
         <ToastContainer position="top-right" autoClose={3000} />
         <div className="app-container">
-          {/* Sidebar */}
           <div className="sidebar" style={{ width: sidebarWidth }}>
             <h2>
-              {roomId ? 'Join or Create Another Room' : 'Welcome to Chat Room'}
+              {roomId ? 'Join or Create Another Room' : 'Welcome to Chat'}
             </h2>
 
             <input
-                type="text"
-                placeholder="Your nickname"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
+                placeholder="Nickname"
                 disabled={!!roomId}
             />
             <input
-                type="text"
-                placeholder="Room ID to join"
                 value={roomIdInput}
                 onChange={(e) => setRoomIdInput(e.target.value)}
+                placeholder="Room ID"
                 disabled={!!roomId}
             />
 
-            <label htmlFor="avatar-upload">Select Avatar (optional):</label>
+            <label htmlFor="avatar-upload">Avatar (optional)</label>
             <input
                 id="avatar-upload"
                 type="file"
@@ -116,16 +108,22 @@ function App() {
             {userIcon && (
                 <img
                     src={userIcon}
-                    alt="Avatar preview"
+                    alt="Preview"
                     className="avatar-preview"
                 />
             )}
 
             <div className="button-group">
-              <button onClick={handleCreate} disabled={isCreating || !!roomId}>
+              <button
+                  onClick={handleCreate}
+                  disabled={isCreating || !!roomId}
+              >
                 {isCreating ? 'Creating…' : 'Create Room'}
               </button>
-              <button onClick={handleJoin} disabled={isJoining || !!roomId}>
+              <button
+                  onClick={handleJoin}
+                  disabled={isJoining || !!roomId}
+              >
                 {isJoining ? 'Joining…' : 'Join Room'}
               </button>
             </div>
@@ -148,9 +146,8 @@ function App() {
             )}
           </div>
 
-          <div className="divider" onMouseDown={handleMouseDown} />
+          <div className="divider" onMouseDown={startResize} />
 
-          {/* Chat panel */}
           <div className="chat-panel">
             {(isCreating || isJoining) && (
                 <div className="spinner-overlay">
@@ -168,9 +165,7 @@ function App() {
                     userNickname={nickname}
                 />
             ) : (
-                <p className="placeholder">
-                  Join or create a room to begin chatting.
-                </p>
+                <p className="placeholder">Join or create to chat.</p>
             )}
           </div>
         </div>

@@ -16,21 +16,20 @@ export const useTelepartySocket = () => {
     const clientRef = useRef<TelepartyClient | null>(null);
     const [roomId, setRoomId] = useState<string | null>(null);
 
-    // Remember last nick/icon for reconnect and typing events
     const userSettingsRef = useRef<{ nick?: string; icon?: string }>({});
 
-    // Initialize or reinitialize the WebSocket client
+    // Initialize / re-init WebSocket client
     const initClient = () => {
         clientRef.current?.teardown();
 
         const handler: SocketEventHandler = {
             onConnectionReady: () => {
                 setIsConnected(true);
-                toast.success('🟢 Connected to server');
+                toast.success('🟢 Connected');
             },
             onClose: () => {
                 setIsConnected(false);
-                toast.error('🔴 Disconnected from server');
+                toast.error('🔴 Disconnected');
             },
             onMessage: (raw) => {
                 switch (raw.type) {
@@ -40,16 +39,17 @@ export const useTelepartySocket = () => {
                         break;
                     }
                     case SocketMessageTypes.SET_TYPING_PRESENCE: {
-                        const d = raw.data as { typing: boolean; userNickname: string };
-                        setTypingUsers((prev) => {
-                            if (d.typing) {
-                                return prev.includes(d.userNickname)
+                        const d = raw.data as {
+                            typing: boolean;
+                            userNickname: string;
+                        };
+                        setTypingUsers((prev) =>
+                            d.typing
+                                ? prev.includes(d.userNickname)
                                     ? prev
-                                    : [...prev, d.userNickname];
-                            } else {
-                                return prev.filter((n) => n !== d.userNickname);
-                            }
-                        });
+                                    : [...prev, d.userNickname]
+                                : prev.filter((n) => n !== d.userNickname)
+                        );
                         break;
                     }
                 }
@@ -60,12 +60,14 @@ export const useTelepartySocket = () => {
     };
 
     useEffect(() => {
+
         initClient();
         return () => {
             clientRef.current?.teardown();
         };
     }, []);
 
+    // CREATE → then JOIN to seed history & get the “you joined” system msg
     const createRoom = async (nick: string, icon?: string) => {
         if (!clientRef.current) throw new Error('Socket not ready');
         setIsCreating(true);
@@ -73,7 +75,14 @@ export const useTelepartySocket = () => {
         try {
             const newId = await clientRef.current.createChatRoom(nick, icon);
             setRoomId(newId);
-            setMessages([]); // no history on new room
+            // now join it so you get history & system messages
+            const { messages: history } = await clientRef.current.joinChatRoom(
+                nick,
+                newId,
+                icon
+            );
+            setMessages(history);
+            setTypingUsers([]);
             return newId;
         } finally {
             setIsCreating(false);
@@ -92,6 +101,7 @@ export const useTelepartySocket = () => {
             );
             setRoomId(id);
             setMessages(history);
+            setTypingUsers([]);
             return history;
         } finally {
             setIsJoining(false);
@@ -103,6 +113,7 @@ export const useTelepartySocket = () => {
     };
 
     const sendTyping = (typing: boolean) => {
+        console.log('[typing] sending:', typing);
         const nick = userSettingsRef.current.nick;
         if (!nick) return;
         clientRef.current?.sendMessage(
@@ -126,6 +137,7 @@ export const useTelepartySocket = () => {
         clientRef.current?.teardown();
         setRoomId(null);
         setMessages([]);
+        setTypingUsers([]);
         setIsConnected(false);
     };
 
@@ -139,6 +151,7 @@ export const useTelepartySocket = () => {
         createRoom,
         joinRoom,
         sendMessage,
+
         sendTyping,
         reconnect,
         leaveRoom,

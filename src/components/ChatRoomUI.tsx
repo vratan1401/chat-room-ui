@@ -30,14 +30,13 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
     const chatBoxRef = useRef<HTMLDivElement>(null);
     const typingTimeout = useRef<NodeJS.Timeout>(undefined);
 
-    // Auto-scroll when messages or typing indicator update
     useEffect(() => {
+        console.log('typingUsers:', typingUsers);
         if (chatBoxRef.current) {
             chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
         }
     }, [messages, typingUsers]);
 
-    // Copy room ID
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(roomId);
@@ -46,7 +45,6 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
         } catch {}
     };
 
-    // Send message
     const handleSend = () => {
         const trimmed = text.trim();
         if (!trimmed) return;
@@ -55,7 +53,6 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
         onTyping(false);
     };
 
-    // Enter key
     const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -63,7 +60,6 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
         }
     };
 
-    // Typing presence
     const handleTyping = () => {
         onTyping(true);
         clearTimeout(typingTimeout.current);
@@ -75,7 +71,6 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
             <div className="chat-header">
                 <h2 className="chat-title">Chat Room</h2>
                 <button
-                    type="button"
                     className="copy-btn"
                     onClick={handleCopy}
                     aria-label="Copy Room ID"
@@ -95,7 +90,6 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
 
                     return (
                         <div key={idx} className={`chat-row ${rowClass}`}>
-                            {/* Other’s avatar */}
                             {!msg.isSystemMessage && !isOwn && msg.userIcon && (
                                 <img
                                     src={msg.userIcon}
@@ -103,7 +97,6 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                                     className="avatar"
                                 />
                             )}
-
                             <div
                                 className={`chat-message ${
                                     msg.isSystemMessage
@@ -128,8 +121,6 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                                     </>
                                 )}
                             </div>
-
-                            {/* Your avatar */}
                             {!msg.isSystemMessage && isOwn && msg.userIcon && (
                                 <img
                                     src={msg.userIcon}
@@ -141,7 +132,6 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                     );
                 })}
 
-                {/* Typing indicator */}
                 {typingUsers.length > 0 && (
                     <div className="typing-indicator">
                         {typingUsers.join(', ')}{' '}
@@ -162,9 +152,7 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                     onKeyDown={onKeyDown}
                     aria-label="Type a message"
                 />
-                <button type="button" onClick={handleSend}>
-                    Send
-                </button>
+                <button onClick={handleSend}>Send</button>
             </div>
         </div>
     );
