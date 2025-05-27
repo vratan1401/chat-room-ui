@@ -1,13 +1,81 @@
+/* src/components/ChatRoomUI.css */
+
+/* Container */
+.chat-room-ui {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #121212;
+    color: #fff;
+}
+
+/* Header */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.chat-title {
+    margin: 0;
+    font-size: 1.25rem;
+}
+.copy-btn {
+    background-color: #e50914;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+.copy-btn:hover {
+    background-color: white;
+    color: #121212;
+}
+
+/* Message list */
 .chat-box {
-    flex-grow: 1;
+    flex: 1;
     overflow-y: auto;
-    padding-right: 1rem;
-    margin-bottom: 1rem;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
 
+/* Row wrapper so avatar + bubble sit side-by-side */
+.chat-row {
+    display: flex;
+    align-items: flex-start;
+}
+.chat-row.other {
+    justify-content: flex-start;
+}
+.chat-row.own {
+    justify-content: flex-end;
+}
+.chat-row.system-row {
+    justify-content: center;
+}
+
+/* Avatar image */
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+/* push avatar outside the bubble */
+.chat-row.other .avatar {
+    margin-right: 0.5rem;
+}
+.chat-row.own .avatar {
+    margin-left: 0.5rem;
+}
+
+/* Message bubble */
 .chat-message {
     max-width: 60%;
     padding: 0.75rem 1rem;
@@ -16,29 +84,34 @@
     line-height: 1.4;
     word-break: break-word;
 }
-
+/* Others’ messages */
 .chat-message.left {
     background-color: #2b2b2b;
+    color: #fff;
     align-self: flex-start;
 }
-
+/* Your messages */
 .chat-message.right {
     background-color: #e50914;
-    color: white;
+    color: #fff;
     align-self: flex-end;
 }
-
+/* System messages */
 .chat-message.system {
+    background: transparent;
     font-style: italic;
-    color: #aaaaaa;
-    align-self: center;
+    color: #aaa;
+    max-width: 100%;
+    text-align: center;
 }
 
+/* Input area */
 .chat-input {
     display: flex;
     gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
 }
-
 .chat-input input {
     flex: 1;
     padding: 0.75rem;
@@ -46,8 +119,8 @@
     border-radius: 4px;
     background-color: #2b2b2b;
     color: white;
+    font-size: 1rem;
 }
-
 .chat-input button {
     background-color: #e50914;
     color: white;
@@ -56,4 +129,7 @@
     border-radius: 4px;
     font-weight: bold;
     cursor: pointer;
+}
+.chat-input button:hover {
+    opacity: 0.9;
 }
