@@ -133,3 +133,10 @@
 .chat-input button:hover {
     opacity: 0.9;
 }
+
+.typing-indicator {
+    padding: 0.5rem 1rem;
+    font-style: italic;
+    color: #aaa;
+}
+

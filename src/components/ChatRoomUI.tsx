@@ -1,18 +1,19 @@
-// src/components/ChatRoomUI.tsx
 import React, {
     useState,
     useRef,
     useEffect,
     KeyboardEvent,
     FC,
-} from "react";
-import { SessionChatMessage } from "teleparty-websocket-lib";
-import "./ChatRoomUI.css";
+} from 'react';
+import { SessionChatMessage } from 'teleparty-websocket-lib';
+import './ChatRoomUI.css';
 
 interface ChatRoomUIProps {
     roomId: string;
     messages: SessionChatMessage[];
     onSendMessage: (text: string) => void;
+    onTyping: (typing: boolean) => void;
+    typingUsers: string[];
     userNickname: string;
 }
 
@@ -20,19 +21,23 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                                              roomId,
                                              messages,
                                              onSendMessage,
+                                             onTyping,
+                                             typingUsers,
                                              userNickname,
                                          }) => {
-    const [text, setText] = useState("");
+    const [text, setText] = useState('');
     const [copied, setCopied] = useState(false);
     const chatBoxRef = useRef<HTMLDivElement>(null);
+    const typingTimeout = useRef<NodeJS.Timeout>(undefined);
 
-    // auto-scroll
+    // Auto-scroll when messages or typing indicator update
     useEffect(() => {
         if (chatBoxRef.current) {
             chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
         }
-    }, [messages]);
+    }, [messages, typingUsers]);
 
+    // Copy room ID
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(roomId);
@@ -41,18 +46,28 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
         } catch {}
     };
 
+    // Send message
     const handleSend = () => {
         const trimmed = text.trim();
         if (!trimmed) return;
         onSendMessage(trimmed);
-        setText("");
+        setText('');
+        onTyping(false);
     };
 
+    // Enter key
     const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter") {
+        if (e.key === 'Enter') {
             e.preventDefault();
             handleSend();
         }
+    };
+
+    // Typing presence
+    const handleTyping = () => {
+        onTyping(true);
+        clearTimeout(typingTimeout.current);
+        typingTimeout.current = setTimeout(() => onTyping(false), 1000);
     };
 
     return (
@@ -65,28 +80,22 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                     onClick={handleCopy}
                     aria-label="Copy Room ID"
                 >
-                    {copied ? "Copied!" : "Copy Room ID"}
+                    {copied ? 'Copied!' : 'Copy Room ID'}
                 </button>
             </div>
 
-            <div
-                className="chat-box"
-                ref={chatBoxRef}
-                role="log"
-                aria-live="polite"
-            >
+            <div className="chat-box" ref={chatBoxRef} role="log" aria-live="polite">
                 {messages.map((msg, idx) => {
-                    console.log('Rendering message:', msg.userNickname, msg.userIcon);
                     const isOwn = msg.userNickname === userNickname;
                     const rowClass = msg.isSystemMessage
-                        ? "system-row"
+                        ? 'system-row'
                         : isOwn
-                            ? "own"
-                            : "other";
+                            ? 'own'
+                            : 'other';
 
                     return (
                         <div key={idx} className={`chat-row ${rowClass}`}>
-                            {/* LEFT side: other users’ avatars */}
+                            {/* Other’s avatar */}
                             {!msg.isSystemMessage && !isOwn && msg.userIcon && (
                                 <img
                                     src={msg.userIcon}
@@ -98,10 +107,10 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                             <div
                                 className={`chat-message ${
                                     msg.isSystemMessage
-                                        ? "system"
+                                        ? 'system'
                                         : isOwn
-                                            ? "right"
-                                            : "left"
+                                            ? 'right'
+                                            : 'left'
                                 }`}
                             >
                                 {msg.isSystemMessage ? (
@@ -120,7 +129,7 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                                 )}
                             </div>
 
-                            {/* RIGHT side: your own avatar */}
+                            {/* Your avatar */}
                             {!msg.isSystemMessage && isOwn && msg.userIcon && (
                                 <img
                                     src={msg.userIcon}
@@ -131,6 +140,14 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                         </div>
                     );
                 })}
+
+                {/* Typing indicator */}
+                {typingUsers.length > 0 && (
+                    <div className="typing-indicator">
+                        {typingUsers.join(', ')}{' '}
+                        {typingUsers.length > 1 ? 'are' : 'is'} typing…
+                    </div>
+                )}
             </div>
 
             <div className="chat-input">
@@ -138,7 +155,10 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                     type="text"
                     placeholder="Type a message…"
                     value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    onChange={(e) => {
+                        setText(e.target.value);
+                        handleTyping();
+                    }}
                     onKeyDown={onKeyDown}
                     aria-label="Type a message"
                 />

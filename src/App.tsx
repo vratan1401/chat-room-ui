@@ -1,175 +1,180 @@
-// src/App.tsx
-import React, { useState, useRef } from "react";
-import "./App.css";
-import { useTelepartySocket } from "./hooks/useTelepartySocket";
-import ChatRoomUI from "./components/ChatRoomUI";
+import React, { useState, useRef } from 'react';
+import './App.css';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useTelepartySocket } from './hooks/useTelepartySocket';
+import ChatRoomUI from './components/ChatRoomUI';
 
 function App() {
-  const [nickname, setNickname] = useState("");
-  const [roomIdInput, setRoomIdInput] = useState("");
-  const [hasJoined, setHasJoined] = useState(false);
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useState<number>(300);
-  const isResizing = useRef(false);
+  const [nickname, setNickname] = useState('');
+  const [roomIdInput, setRoomIdInput] = useState('');
   const [userIcon, setUserIcon] = useState<string | undefined>(undefined);
 
-  const { messages, isConnected, createRoom, joinRoom, sendMessage } =
-      useTelepartySocket();
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const isResizing = useRef(false);
 
+  const {
+    messages,
+    isConnected,
+    isJoining,
+    isCreating,
+    typingUsers,
+    roomId,
+    createRoom,
+    joinRoom,
+    sendMessage,
+    sendTyping,
+    reconnect,
+    leaveRoom,
+  } = useTelepartySocket();
+
+  // Avatar picker (optional)
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    console.log("Avatar file selected:", file.name, file.type);
-
-    // Only allow PNG / JPEG
     if (!/^image\/(png|jpe?g)$/.test(file.type)) {
-      alert("Please upload a PNG or JPEG image");
-      return;
+      return toast.error('Please upload PNG/JPEG');
     }
-
     const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      console.log("Avatar data URL length:", result.length);
-      setUserIcon(result);
-    };
+    reader.onload = () => setUserIcon(reader.result as string);
     reader.readAsDataURL(file);
   };
 
-  const handleCreateRoom = async () => {
-    if (!nickname.trim()) return alert("Please enter a nickname");
-    if (!userIcon) return alert("Please select an avatar first");
-
-    console.log("Creating room; nickname=", nickname, "icon:", userIcon);
+  // Create room
+  const handleCreate = async () => {
+    if (!nickname.trim()) return toast.error('Enter a nickname');
     try {
-      const newRoomId = await createRoom(nickname, userIcon);
-      console.log("Created room ID:", newRoomId);
-      setActiveRoomId(newRoomId || "");
-      setHasJoined(true);
-    } catch (err) {
-      console.error("Failed to create room:", err);
-      alert("Error creating room: " + (err as Error).message);
+      await createRoom(nickname, userIcon);
+    } catch (e: any) {
+      toast.error(e.message);
     }
   };
 
-  const handleJoinRoom = () => {
-    if (!nickname.trim() || !roomIdInput.trim()) {
-      return alert("Please enter both nickname and room ID");
-    }
-    if (!userIcon) return alert("Please select an avatar first");
-
-    console.log(
-        "Joining room; nickname=",
-        nickname,
-        "roomId=",
-        roomIdInput,
-        "icon:",
-        userIcon
-    );
+  // Join room
+  const handleJoin = async () => {
+    if (!nickname.trim() || !roomIdInput.trim())
+      return toast.error('Enter nickname & room ID');
     try {
-      joinRoom(nickname, roomIdInput, userIcon);
-      setActiveRoomId(roomIdInput);
-      setHasJoined(true);
-    } catch (err) {
-      console.error("Failed to join room:", err);
-      alert("Error joining room: " + (err as Error).message);
+      await joinRoom(nickname, roomIdInput, userIcon);
+    } catch (e: any) {
+      toast.error(e.message);
     }
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isResizing.current) {
-      const newW = e.clientX;
-      const min = 200,
-          max = window.innerWidth - 200;
-      if (newW > min && newW < max) setSidebarWidth(newW);
-    }
-  };
-
-  const handleMouseUp = () => {
-    isResizing.current = false;
-    document.removeEventListener("mousemove", handleMouseMove);
-    document.removeEventListener("mouseup", handleMouseUp);
-  };
-
+  // Sidebar drag
   const handleMouseDown = () => {
     isResizing.current = true;
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isResizing.current) return;
+    const newW = e.clientX;
+    const min = 200,
+        max = window.innerWidth - 200;
+    if (newW > min && newW < max) setSidebarWidth(newW);
+  };
+  const handleMouseUp = () => {
+    isResizing.current = false;
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
   };
 
   return (
-      <div className="app-container">
-        {/* Left side - Sidebar */}
-        <div className="sidebar" style={{ width: sidebarWidth, flex: "none" }}>
-          <h2>
-            {hasJoined
-                ? "Join or Create Another Room"
-                : "Welcome to Chat Room"}
-          </h2>
+      <>
+        <ToastContainer position="top-right" autoClose={3000} />
+        <div className="app-container">
+          {/* Sidebar */}
+          <div className="sidebar" style={{ width: sidebarWidth }}>
+            <h2>
+              {roomId ? 'Join or Create Another Room' : 'Welcome to Chat Room'}
+            </h2>
 
-          <input
-              type="text"
-              placeholder="Enter your nickname"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-          />
+            <input
+                type="text"
+                placeholder="Your nickname"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                disabled={!!roomId}
+            />
+            <input
+                type="text"
+                placeholder="Room ID to join"
+                value={roomIdInput}
+                onChange={(e) => setRoomIdInput(e.target.value)}
+                disabled={!!roomId}
+            />
 
-          <input
-              type="text"
-              placeholder="Enter Room ID (to join)"
-              value={roomIdInput}
-              onChange={(e) => setRoomIdInput(e.target.value)}
-          />
+            <label htmlFor="avatar-upload">Select Avatar (optional):</label>
+            <input
+                id="avatar-upload"
+                type="file"
+                accept="image/png, image/jpeg"
+                onChange={handleAvatarUpload}
+                disabled={!!roomId}
+            />
+            {userIcon && (
+                <img
+                    src={userIcon}
+                    alt="Avatar preview"
+                    className="avatar-preview"
+                />
+            )}
 
-          {/* Avatar picker moved ABOVE the buttons */}
-          <label htmlFor="avatar-upload">Select Avatar:</label>
-          <input
-              id="avatar-upload"
-              type="file"
-              accept="image/png, image/jpeg"
-              onChange={handleAvatarUpload}
-          />
-          {userIcon && (
-              <img
-                  src={userIcon}
-                  alt="Avatar Preview"
-                  className="avatar-preview"
-              />
-          )}
+            <div className="button-group">
+              <button onClick={handleCreate} disabled={isCreating || !!roomId}>
+                {isCreating ? 'Creating…' : 'Create Room'}
+              </button>
+              <button onClick={handleJoin} disabled={isJoining || !!roomId}>
+                {isJoining ? 'Joining…' : 'Join Room'}
+              </button>
+            </div>
 
-          <div className="button-group">
-            <button onClick={handleCreateRoom}>Create Room</button>
-            <button onClick={handleJoinRoom}>Join Room</button>
+            <p>Status: {isConnected ? '🟢 Connected' : '🔴 Disconnected'}</p>
+            {!isConnected && roomId && (
+                <button className="reconnect-btn" onClick={reconnect}>
+                  Reconnect
+                </button>
+            )}
+            {roomId && (
+                <button className="leave-btn" onClick={leaveRoom}>
+                  Leave Room
+                </button>
+            )}
+            {roomId && (
+                <p>
+                  <strong>Room ID:</strong> {roomId}
+                </p>
+            )}
           </div>
 
-          <p>Status: {isConnected ? "🟢 Connected" : "🔴 Disconnected"}</p>
-          {activeRoomId && (
-              <p>
-                <strong>Room ID:</strong> {activeRoomId}
-              </p>
-          )}
-        </div>
+          <div className="divider" onMouseDown={handleMouseDown} />
 
-        {/* Draggable divider */}
-        <div className="divider" onMouseDown={handleMouseDown} />
+          {/* Chat panel */}
+          <div className="chat-panel">
+            {(isCreating || isJoining) && (
+                <div className="spinner-overlay">
+                  <div className="spinner" />
+                </div>
+            )}
 
-        {/* Right side - Chat */}
-        <div className="chat-panel">
-          {hasJoined && activeRoomId ? (
-              <ChatRoomUI
-                  roomId={activeRoomId}
-                  messages={messages}
-                  onSendMessage={sendMessage}
-                  userNickname={nickname}
-              />
-          ) : (
-              <p className="placeholder">
-                Join or create a room to begin chatting.
-              </p>
-          )}
+            {roomId ? (
+                <ChatRoomUI
+                    roomId={roomId}
+                    messages={messages}
+                    onSendMessage={sendMessage}
+                    onTyping={sendTyping}
+                    typingUsers={typingUsers}
+                    userNickname={nickname}
+                />
+            ) : (
+                <p className="placeholder">
+                  Join or create a room to begin chatting.
+                </p>
+            )}
+          </div>
         </div>
-      </div>
+      </>
   );
 }
 
