@@ -1,63 +1,65 @@
-// src/hooks/useTelepartySocket.ts
 import { useEffect, useRef, useState } from 'react';
 import {
     TelepartyClient,
     SocketEventHandler,
     SocketMessageTypes,
-    SessionChatMessage,
-    SendMessageData,
-} from 'teleparty-WebSocket-lib';
+    SessionChatMessage
+} from 'teleparty-websocket-lib';
 
-export function useTelepartySocket(nickname: string) {
+
+export const useTelepartySocket = () => {
     const [messages, setMessages] = useState<SessionChatMessage[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const clientRef = useRef<TelepartyClient | null>(null);
+    const [roomId, setRoomId] = useState<string | null>(null);
 
     useEffect(() => {
-        const handler: SocketEventHandler = {
+        const eventHandler: SocketEventHandler = {
             onConnectionReady: () => {
-                console.log('Socket connected');
+                console.log('✅ WebSocket connection established.');
                 setIsConnected(true);
             },
             onClose: () => {
-                alert('Socket closed. Please refresh to reconnect.');
+                console.warn('⚠️ WebSocket closed.');
+                alert('Connection closed. Please refresh to reconnect.');
                 setIsConnected(false);
             },
             onMessage: (message) => {
-                console.log('Received message:', message);
                 if (message.type === SocketMessageTypes.SEND_MESSAGE) {
-                    setMessages((prev) => [...prev, message.data]);
+                    const incomingMessage = message.data as SessionChatMessage;
+                    setMessages((prev) => [...prev, incomingMessage]);
                 }
+                // You can handle other message types like system or typing indicators here
             },
         };
 
-        clientRef.current = new TelepartyClient(handler);
-
-        return () => {
-            clientRef.current?.close();
-        };
+        clientRef.current = new TelepartyClient(eventHandler);
     }, []);
 
-    const createRoom = async () => {
-        if (!clientRef.current) return null;
-        const roomId = await clientRef.current.createChatRoom(nickname);
-        return roomId;
+    const createRoom = async (nickname: string, userIcon?: string) => {
+        if (!clientRef.current) return;
+        const newRoomId = await clientRef.current.createChatRoom(nickname, userIcon);
+        setRoomId(newRoomId);
+        return newRoomId;
     };
 
-    const joinRoom = (roomId: string) => {
-        clientRef.current?.joinChatRoom(nickname, roomId);
+    const joinRoom = (nickname: string, joinRoomId: string, userIcon?: string) => {
+        if (!clientRef.current) return;
+        clientRef.current.joinChatRoom(nickname, joinRoomId, userIcon);
+        setRoomId(joinRoomId);
     };
 
-    const sendMessage = (text: string) => {
-        const payload: SendMessageData = { body: text };
-        clientRef.current?.sendMessage(SocketMessageTypes.SEND_MESSAGE, payload);
+    const sendMessage = (body: string) => {
+        if (!clientRef.current) return;
+        clientRef.current.sendMessage(SocketMessageTypes.SEND_MESSAGE, { body });
     };
 
     return {
         isConnected,
         messages,
+        roomId,
         createRoom,
         joinRoom,
         sendMessage,
     };
-}
+};
