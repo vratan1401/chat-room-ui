@@ -76,6 +76,7 @@ const ChatRoomUI: FC<ChatRoomUIProps> = ({
                 aria-live="polite"
             >
                 {messages.map((msg, idx) => {
+                    console.log('Rendering message:', msg.userNickname, msg.userIcon);
                     const isOwn = msg.userNickname === userNickname;
                     const rowClass = msg.isSystemMessage
                         ? "system-row"
